@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Classifier</title>
+    <link href="{{ url_for('static', path='style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📧 Email Classifier</h1>
+        </header>
+        
+        <div class="main-content">
+            <div class="input-section">
+                <h2 class="section-title">✏️ Entrada do Email</h2>
+                
+                <div class="form-group">
+                    <label for="emailSubject">Assunto:</label>
+                    <input type="text" id="emailSubject" placeholder="Digite o assunto do email..." class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label for="emailBody">Corpo do Email:</label>
+                    <textarea id="emailBody" placeholder="Cole ou digite o conteúdo do email aqui..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="classificationMethod">Método de Classificação:</label>
+                    <select id="classificationMethod">
+                        <option value="ensemble">Ensemble (Recomendado)</option>
+                        <option value="huggingface">Hugging Face</option>
+                        <option value="openai">OpenAI GPT</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="aiMethod">Método de Geração de Resposta:</label>
+                    <select id="aiMethod">
+                        <option value="openai">OpenAI GPT</option>
+                        <option value="huggingface">Hugging Face</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="emailFile">Upload do Email:</label>
+                    <input type="file" name="emailFile" id="emailFile" accept=".txt,.eml">
+                </div>
+            </div>
+            
+            <div class="output-section">
+                <h2 class="section-title">📊 Resultados</h2>
+                
+                <div id="noResult" style="text-align: center; color: #6c757d; padding: 40px;">
+                    <p>Os resultados da classificação aparecerão aqui.</p>
+                    <p>Clique em "Classificar Email" para começar.</p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+</body>
+</html>
