@@ -1,64 +1,263 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Classifier</title>
-    <link href="{{ url_for('static', path='style.css') }}" rel="stylesheet">
+    <title>Classificador de Emails com IA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-top: 30px;
+        }
+        .main-card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: none;
+        }
+        .ai-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .form-control:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 0.25rem rgba(118, 75, 162, 0.25);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .example-card {
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .example-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+        }
+    </style>
 </head>
 <body>
+    <!-- Status IA -->
+    <div class="ai-status">
+        {% if ai_available %}
+        <span class="badge bg-success">
+            <i class="bi bi-check-circle"></i> IA Disponível
+        </span>
+        {% else %}
+        <span class="badge bg-warning">
+            <i class="bi bi-exclamation-triangle"></i> IA Offline
+        </span>
+        {% endif %}
+    </div>
+
     <div class="container">
-        <header>
-            <h1>📧 Email Classifier</h1>
-        </header>
-        
-        <div class="main-content">
-            <div class="input-section">
-                <h2 class="section-title">✏️ Entrada do Email</h2>
-                
-                <div class="form-group">
-                    <label for="emailSubject">Assunto:</label>
-                    <input type="text" id="emailSubject" placeholder="Digite o assunto do email..." class="form-control">
-                </div>
-                
-                <div class="form-group">
-                    <label for="emailBody">Corpo do Email:</label>
-                    <textarea id="emailBody" placeholder="Cole ou digite o conteúdo do email aqui..."></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="classificationMethod">Método de Classificação:</label>
-                    <select id="classificationMethod">
-                        <option value="ensemble">Ensemble (Recomendado)</option>
-                        <option value="huggingface">Hugging Face</option>
-                        <option value="openai">OpenAI GPT</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="aiMethod">Método de Geração de Resposta:</label>
-                    <select id="aiMethod">
-                        <option value="openai">OpenAI GPT</option>
-                        <option value="huggingface">Hugging Face</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="emailFile">Upload do Email:</label>
-                    <input type="file" name="emailFile" id="emailFile" accept=".txt,.eml">
-                </div>
-            </div>
-            
-            <div class="output-section">
-                <h2 class="section-title">📊 Resultados</h2>
-                
-                <div id="noResult" style="text-align: center; color: #6c757d; padding: 40px;">
-                    <p>Os resultados da classificação aparecerão aqui.</p>
-                    <p>Clique em "Classificar Email" para começar.</p>
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card main-card">
+                    <div class="card-header bg-white text-center py-4">
+                        <h1 class="display-5 mb-3 text-primary">
+                            <i class="bi bi-robot"></i> Classificador de Emails com IA
+                        </h1>
+                        <p class="lead text-muted mb-0">
+                            Analise automaticamente emails e gere respostas inteligentes
+                        </p>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        {% if error %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i> {{ error }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endif %}
+                        
+                        <form action="/classificar" method="post" id="emailForm">
+                            <div class="mb-4">
+                                <label for="email_text" class="form-label h5">
+                                    <i class="bi bi-envelope"></i> Texto do Email
+                                </label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="email_text" 
+                                    name="email_text" 
+                                    rows="8"
+                                    placeholder="Cole o conteúdo do email aqui..."
+                                    required>{{ email_original if email_original else '' }}</textarea>
+                                <div class="form-text">
+                                    Nossa IA analisará o conteúdo e classificará como Produtivo ou Improdutivo
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h5><i class="bi bi-lightning"></i> Exemplos Rápidos:</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="card example-card h-100" onclick="loadExample('produtivo')">
+                                            <div class="card-body">
+                                                <h6 class="card-title text-success">
+                                                    <i class="bi bi-check-circle"></i> Email Produtivo
+                                                </h6>
+                                                <p class="card-text small">"Precisamos marcar reunião urgente sobre projeto com prazo próximo..."</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card example-card h-100" onclick="loadExample('improdutivo')">
+                                            <div class="card-body">
+                                                <h6 class="card-title text-danger">
+                                                    <i class="bi bi-exclamation-triangle"></i> Email Improdutivo
+                                                </h6>
+                                                <p class="card-text small">"GANHE PRÊMIO! Clique aqui para resgatar oferta exclusiva..."</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-magic"></i> Analisar com IA
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <hr class="my-4">
+                        
+                        <div class="row text-center">
+                            <div class="col-md-4 mb-3">
+                                <div class="p-3 rounded bg-light">
+                                    <i class="bi bi-cpu fs-1 text-primary"></i>
+                                    <h5 class="mt-2">NLP Avançado</h5>
+                                    <p class="text-muted small">Processamento de linguagem natural</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="p-3 rounded bg-light">
+                                    <i class="bi bi-diagram-3 fs-1 text-primary"></i>
+                                    <h5 class="mt-2">Classificação</h5>
+                                    <p class="text-muted small">Identificação automática de conteúdo</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="p-3 rounded bg-light">
+                                    <i class="bi bi-chat-dots fs-1 text-primary"></i>
+                                    <h5 class="mt-2">Resposta IA</h5>
+                                    <p class="text-muted small">Geração de respostas inteligentes</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-light text-center py-3">
+                        <small class="text-muted">
+                            Sistema desenvolvido com FastAPI • NLTK • 
+                            {% if ai_available %}
+                            Transformers GPT-2
+                            {% else %}
+                            Sistema de Templates
+                            {% endif %}
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
-        
     </div>
 
+    <script>
+        // Exemplos de emails
+        const examples = {
+            produtivo: `Prezada equipe,
+
+Precisamos marcar uma reunião URGENTE para discutir o projeto XYZ. O prazo final é semana que vem e identificamos algumas questões críticas que precisam ser resolvidas.
+
+Pontos para discussão:
+1. Revisão do cronograma atual
+2. Alocação de recursos adicionais
+3. Mitigação de riscos identificados
+
+Sugiro amanhã às 14h. Por favor confirmem disponibilidade.
+
+Atenciosamente,
+Maria Santos
+Gerente de Projetos`,
+
+            improdutivo: `PARABÉNS! VOCÊ GANHOU!
+
+GANHE UM IPHONE 14 PRO GRÁTIS!
+
+Esta é uma oferta EXCLUSIVA por tempo LIMITADO!
+Clique no link abaixo para resgatar seu prêmio:
+
+👉 http://bit.ly/premio-exclusivo-iphone
+
+*Oferta válida apenas para os primeiros 50 cliques!*
+NÃO PERCA ESTA OPORTUNIDADE ÚNICA!
+
+Atenciosamente,
+Equipe de Promoções`
+        };
+
+        function loadExample(type) {
+            document.getElementById('email_text').value = examples[type];
+            document.getElementById('email_text').focus();
+            
+            // Rolagem suave
+            window.scrollTo({
+                top: document.getElementById('email_text').offsetTop - 100,
+                behavior: 'smooth'
+            });
+        }
+
+        // Validação do formulário
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            const emailText = document.getElementById('email_text').value.trim();
+            if (!emailText) {
+                e.preventDefault();
+                alert('Por favor, insira o texto do email.');
+                return false;
+            }
+            if (emailText.length < 10) {
+                e.preventDefault();
+                alert('O email precisa ter pelo menos 10 caracteres.');
+                return false;
+            }
+            return true;
+        });
+        
+        // Status da IA
+        function checkAIStatus() {
+            fetch('/health')
+                .then(response => response.json())
+                .then(data => {
+                    const statusEl = document.querySelector('.ai-status .badge');
+                    if (data.ai_available) {
+                        statusEl.className = 'badge bg-success';
+                        statusEl.innerHTML = '<i class="bi bi-check-circle"></i> IA Disponível';
+                    } else {
+                        statusEl.className = 'badge bg-warning';
+                        statusEl.innerHTML = '<i class="bi bi-exclamation-triangle"></i> IA Offline';
+                    }
+                })
+                .catch(error => console.error('Erro ao verificar status:', error));
+        }
+        
+        // Verificar status a cada 30 segundos
+        setInterval(checkAIStatus, 30000);
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
